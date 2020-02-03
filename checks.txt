@@ -1,0 +1,8 @@
+Add New User:
+	- missing input
+	- non-matching passwords
+	- check "is privaledged", but don't include mod info
+	- provide incorrect mod userid
+	- provide incorrect mod password
+	- unmatching passwords
+	- use existing userid
