@@ -1,1 +1,0 @@
-[{"__class__": "PrintRate", "rateid": "A", "name": "A", "lengthrate": 0.5, "timerate": 0.6}, {"__class__": "PrintRate", "rateid": "T1", "name": "Test", "lengthrate": 1.0, "timerate": 1.0}, {"__class__": "PrintRate", "rateid": "P", "name": "P", "lengthrate": 0.7, "timerate": 0.9}, {"__class__": "PrintRate", "rateid": "H", "name": "H", "lengthrate": 0.1, "timerate": 0.1}]

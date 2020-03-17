@@ -36,5 +36,11 @@ def commands():
     cmd.user.get = "U4"
     cmd.user.verify = "U5"
     cmd.user.issuper = "U6"
+    cmd.user.getowing = "U7"
+    
+    cmd.inv = struct()
+    cmd.inv.add = "I1"
+    cmd.inv.get = "I3"
+    cmd.inv.pay = "I4"
     
     return cmd

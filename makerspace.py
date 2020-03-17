@@ -8,26 +8,18 @@ Free to use and edit.
 ###################################################################################################
 # Imports                                                                                 Imports #
 # -- System Imports -- #
+import binascii
 from datetime import datetime
+import hashlib
 import json
 import logging
-
-# -- Custom Imports -- #
-from benutil import trycatch
+import os
 
 
 ###################################################################################################
 # Logging                                                                                 Logging #
-format = logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s]: %(message)s')
 u_logger = logging.getLogger("app.makerspace.User")
 res_logger = logging.getLogger("app.makerspave.ServerResponse")
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(format)
-if not len(u_logger.handlers):
-    u_logger.addHandler(ch)
-if not len(res_logger.handlers):
-    res_logger.addHandler(ch)
 
 ###################################################################################################
 # PrintJob Class                                                                   PrintJob Class #
@@ -89,7 +81,7 @@ class PrintJob:
         self.invoice = ""
         
         # Have a flag for whether or not the print is finished
-        self.finished = False
+        self.finished = finished
     
     
     # ---------------------------------------------------------------- PrintJob ---------- dict() #
@@ -130,6 +122,9 @@ class PrintJob:
             rate = PrintRate.fromDict(rate)
         if type(date) == str:
             date = datetime.fromisoformat(date)
+        
+        if not paidBy:
+            paidBy = userid
         
         printjob = PrintJob(userid, printer, length, duration, rate, paidBy, date=date, 
                             printid=printid, note=note, finished=finished)
@@ -316,18 +311,18 @@ class PrintRate:
 # Invoice Class                                                                     Invoice Class #
 class Invoice:
     # ----------------------------------------------------------------- Invoice -----  __init__() #
-    def __init__(self, userid, invid, date=datetime.now(), prints=set(), refunds=set()):
+    def __init__(self, userid, invid, date=datetime.now(), prints=list(), refunds=list()):
         assert type(userid) == str, "Expected 'str', got '{}'.".format(type(userid))
         assert type(invid) == int, "Expected 'int', got '{}'.".format(type(invid))
         assert type(date) == datetime, "Expected 'datetime', got '{}'.".format(type(date))
-        assert type(prints) == set, "Expected 'set', got '{}'.".format(type(prints))
+        assert type(prints) == list, "Expected 'set', got '{}'.".format(type(prints))
         for p in prints:
-            assert type(print) == PrintJob, "Expected 'PrintJob', got '{}'.".format(type(p))
+            assert type(p) == PrintJob, "Expected 'PrintJob', got '{}'.".format(type(p))
             assert p.paidBy == userid, "Cannot add a print which is paid by another person."
             assert p.finished, "Cannot add a print which is not finished."
-        assert type(refunds) == set, "Expected 'set', got '{}'.".format(type(refunds))
+        assert type(refunds) == list, "Expected 'set', got '{}'.".format(type(refunds))
         for p in refunds:
-            assert type(refunds) == PrintJob, "Expected 'PrintJob', got '{}'.".format(type(p))
+            assert type(p) == PrintJob, "Expected 'PrintJob', got '{}'.".format(type(p))
             assert p.paidBy == userid, "Cannot add a print which is paid by another person."
             assert p.finished, "Cannot add a print which is not finished."
         
@@ -335,11 +330,28 @@ class Invoice:
         self.invid = invid
         self.date = date
         self.prints = prints
-    
+        self.refunds = refunds
     
     # ----------------------------------------------------------------- Invoice ------ calcCost() #
     def calcCost(self):
         return sum([p.calcCost() for p in self.prints]) - sum([p.calcCost() for p in self.refunds])
+    
+    
+    # ----------------------------------------------------------------- Invoice ------ fromDict() #
+    def fromDict(d):
+        return Invoice(d["userid"], d["invid"], date=d["date"], prints=d["prints"], refunds=d["refunds"])
+    
+    
+    # ----------------------------------------------------------------- Invoice ---------- dict() #
+    def dict(self):
+        return {
+            "__class__" : "Invoice",
+            "invid" : self.invid,
+            "userid" : self.userid,
+            "date" : self.date,
+            "prints" : self.prints,
+            "refunds" : self.refunds
+            }
     
     
     # ----------------------------------------------------------------- Invoice ----- exportCSV() #
@@ -352,7 +364,7 @@ class Invoice:
         for p in self.refunds:
             r = p.rate.name
             c = p.rate.calcCost(p.length, p.duration)
-            f += "{},{},{},{},{},{},{}\n".format(p.printid, p.userid, p.date.isoformat, p.length, p.duration, r, -c)
+            f += "{},{},{},{},{},{},{}\n".format(p.printid, p.userid, p.date.isoformat(), p.length, p.duration, r, -c)
             for fp in p.failedPrints:
                 c = p.rate.calcCost(fp.length, fp.duration)
                 f += "Failed Print,,,{},{},{},{}\n".format(fp.length, fp.duration, r, -c)
@@ -365,20 +377,93 @@ class Invoice:
                 f += "Failed Print,,,{},{},{},{}\n".format(fp.length, fp.duration, r, c)
         
         return f
+    
+    
+    # ----------------------------------------------------------------- Invoice ----- exportPDF() #
+    def exportHTML(self, user):
+        # Load templates
+        fname = os.path.join("templates", "row.html")
+        assert os.path.exists(fname), "Cannot find row entry template."
+        with open(fname) as f:
+            tempRow = f.read()
+        
+        fname = os.path.join("templates", "invoice.html")
+        assert os.path.exists(fname), "Cannot find invoice template."
+        with open(fname) as f:
+            tempInvoice = f.read()
+        
+        # Create strings for each entry in the invoice
+        items = []
+        for item in self.prints:
+            items.append(("NEW", item))
+        for item in self.refunds:
+            items.append(("RFND", item))
+        items.sort(key=lambda i: i[1].date)
+        
+        rows = []
+        for item in items:
+            p = item[1]
+            length = p.length + sum([f.length for f in p.failedPrints])
+            duration = (p.duration + sum([f.duration for f in p.failedPrints]))/60
+            row = tempRow
+            row = row.replace("[[MODE]]", item[0])
+            row = row.replace("[[PRINTID]]", p.printid)
+            row = row.replace("[[LENGTH]]", "{:.2}".format(length))
+            row = row.replace("[[DURATION]]", "{:.3f}".format(duration))
+            row = row.replace("[[RATE]]", p.rate.name)
+            row = row.replace("[[COST]]", "${:.2f}".format(p.calcCost()))
+            rows.append(row)
+        
+        # Change class of last item
+        rows[-1] = rows[-1].replace('class="item"', 'class="item.last"')
+        
+        # Substiture everything into full template
+        tempInvoice = tempInvoice.replace("[[INVID]]", str(self.invid))
+        tempInvoice = tempInvoice.replace("[[DATE]]", self.date.strftime("%B %d, %Y"))
+        tempInvoice = tempInvoice.replace("[[USER ID]]", self.userid)
+        name = user.lastname
+        if user.firstname:
+            name += ", {}".format(user.firstname)
+        tempInvoice = tempInvoice.replace("[[NAME]]", name)
+        tempInvoice = tempInvoice.replace("[[EMAIL]]", user.email)
+        tempInvoice = tempInvoice.replace("[[TOTAL]]", "${:.2f}".format(self.calcCost()))
+        
+        tempInvoice = tempInvoice.replace("[[ROWS]]", "\n".join(rows))
+        
+        return tempInvoice
+            
+
 
 
 ###################################################################################################
 # Payment Class                                                                     Payment Class #
 class Payment:
     # ----------------------------------------------------------------- Payment ------ __init__() #
-    def __init__(self, userid, amt, auth_userid):
+    def __init__(self, userid, amt, auth_userid, date=datetime.now()):
         assert type(userid) == str, "Expected 'str', got '{}'.".format(type(userid))
         assert type(amt) in {int, float}, "Expected number, got '{}'.".format(type(amt))
         assert type(auth_userid) == str, "Expected 'str', got '{}'.".format(type(auth_userid))
+        assert type(date) == datetime, "Expected 'datetime', got '{}'.".format(type(date))
         
         self.userid = userid
         self.amt = amt
         self.auth_userid = auth_userid
+        self.date = date
+    
+    
+    # ----------------------------------------------------------------- Payment ---------- dict() #
+    def dict(self):
+        return {"__class__" : "Payment",
+                "userid" : self.userid,
+                "amt" : self.amt,
+                "auth_userid" : self.auth_userid,
+                "date" : self.date
+                }
+    
+    
+    # ----------------------------------------------------------------- Payment ------ fromDict() #
+    def fromDict(d):
+        return Payment(d["userid"], d["amt"], d["auth_userid"], date=d["date"])
 
 
 ###################################################################################################
@@ -397,7 +482,7 @@ class User:
         
         u_logger.debug("__init__: Instantiating User object, userid={}".format(userid))
         self.userid = userid
-        self.passwd = User.hash(passwd)
+        self.passwd = passwd
         self.email = email
         self.issuper = issuper
         self.firstname = firstname
@@ -407,8 +492,11 @@ class User:
     # -------------------------------------------------------------------- User ---------- hash() #
     """ Hashes a string and returns the hash. Right now this function doesn't do anything, but when
     we implement password encryption, this is where that'll happen. """
-    def hash(s):
-        return s
+    def hash(passwd):
+        salt = b"VxEu46!KcD"    # Nothing special about this, just need to use something for salt
+        passwd = hashlib.pbkdf2_hmac("sha256", passwd.encode("utf-8"), salt, 100000)
+        passwd = binascii.hexlify(passwd)
+        return passwd.decode("ascii")
     
     
     # -------------------------------------------------------------------- User ---------- dict() #
@@ -448,6 +536,7 @@ class User:
 ###################################################################################################
 # Server Request Class                                                       Server Request Class #
 class ServerRequest:
+    END_SIGNAL = "BEN_EOF"
     # ----------------------------------------------------------- ServerRequest ------ __init__() #
     def __init__(self, cmd, *args, **kwargs):
         self.cmd = cmd
@@ -461,7 +550,7 @@ class ServerRequest:
         d["cmd"] = self.cmd
         d["args"] = self.args
         d["kwargs"] = self.kwargs
-        return json.dumps(d, default=serialize).encode("utf-8")
+        return json.dumps(d, default=serialize) + ServerRequest.END_SIGNAL
     
     
     # ----------------------------------------------------------- ServerRequest -------- decode() #
@@ -480,6 +569,8 @@ class ServerRequest:
 ###################################################################################################
 # Server Response Class                                                     Server Response Class #
 class ServerResponse:
+    END_SIGNAL = ServerRequest.END_SIGNAL
+    
     # ---------------------------------------------------------- ServerResponse ------ __init__() #
     def __init__(self, val=None, err=False, errcode=0, errmsg = ""):
         self.val = val
@@ -495,7 +586,7 @@ class ServerResponse:
         d["err"] = self.err
         d["errcode"] = self.errcode
         d["errmsg"] = self.errmsg
-        return json.dumps(d, default=serialize).encode("utf-8")
+        return json.dumps(d, default=serialize) + ServerResponse.END_SIGNAL
     
     
     # ---------------------------------------------------------- ServerResponse -------- encode() #
@@ -509,6 +600,10 @@ class ServerResponse:
             raise Exception(str(e))
 
 
+class ServerError(Exception):
+    pass
+
+
 """JSON serializer for objects not serializable by default json code"""
 def serialize(obj):
     if isinstance(obj, datetime):
@@ -518,21 +613,14 @@ def serialize(obj):
                 }
         return serial
 
-    if type(obj) in {PrintJob, PrintJob.FailedPrint, PrintRate, User}:
+    if type(obj) in {PrintJob, PrintJob.FailedPrint, PrintRate, User, Invoice, Payment}:
         serial = obj.dict()
         return serial
     
     try:
         return obj.__dict__
     except:
-        pass
-    
-    try:
-        return dict(obj)
-    except:
-        pass
-    
-    return str(obj)
+        raise ValueError("Cannot serialize object of type <{}>".format(type(obj)))
 
 
 def deserialize(d):
@@ -540,13 +628,23 @@ def deserialize(d):
         c = d["__class__"]
         if c == "PrintJob":
             return PrintJob.fromDict(d)
+        elif c == "FailedPrint":
+            return PrintJob.FailedPrint.fromDict(d)
         elif c == "PrintRate":
             return PrintRate.fromDict(d)
         elif c == "User":
             return User.fromDict(d)
         elif c == "datetime":
             return datetime.fromisoformat(d["val"])
-    return d
+        elif c == "Invoice":
+            return Invoice.fromDict(d)
+        elif c == "Payment":
+            return Payment.fromDict(d)
+    else:
+        try:
+            return dict(d)
+        except:
+            raise ValueError("Cannot deserialize object of type <{}>".format(type(d)))
 
 class FormatError(SyntaxError):
     pass

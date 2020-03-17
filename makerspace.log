@@ -1,0 +1,83 @@
+[2020-03-16 20:28:54,993] [DEBUG] [app.App]: __init__: Logging initializd.
+[2020-03-16 20:28:54,994] [INFO] [app.server.Server]: Creating 'Server' instance.
+[2020-03-16 20:28:54,994] [DEBUG] [app.server.Server]: __init__: Loading server configuration...
+[2020-03-16 20:28:54,995] [DEBUG] [app.server.Server]: __init__: Finished loading configuation.
+[2020-03-16 20:28:54,995] [DEBUG] [app.server.Server]: __init__: Loading command codes...
+[2020-03-16 20:28:54,996] [DEBUG] [app.server.Server]: __init__: Finised loading codes.
+[2020-03-16 20:28:54,996] [DEBUG] [app.server.Server]: __init__: Searching for local data...
+[2020-03-16 20:28:54,996] [DEBUG] [app.server.Server]: __init__: No local user data.
+[2020-03-16 20:28:54,996] [DEBUG] [app.makerspace.User]: __init__: Instantiating User object, userid=admin
+[2020-03-16 20:28:54,996] [DEBUG] [app.server.Server]: __init__: No local print data.
+[2020-03-16 20:28:54,997] [DEBUG] [app.server.Server]: __init__: No local print rate data.
+[2020-03-16 20:28:54,997] [DEBUG] [app.server.Server]: __init__: No local printer data found.
+[2020-03-16 20:28:54,997] [DEBUG] [app.server.Server]: __init__: No local invoice data found.
+[2020-03-16 20:28:54,997] [DEBUG] [app.server.Server]: __init__: No local payment data found.
+[2020-03-16 20:28:54,997] [DEBUG] [app.server.Server]: __init__: Starting listener thread...
+[2020-03-16 20:28:54,998] [INFO] [app.server.Server]: Opening socket...
+[2020-03-16 20:28:54,998] [DEBUG] [app.server.Server]: __init__: Finished thread start.
+[2020-03-16 20:28:54,998] [INFO] [app.server.Server]: Finished creating Server instance.
+[2020-03-16 20:28:54,998] [DEBUG] [app.App]: __init__: Server started.
+[2020-03-16 20:28:54,999] [DEBUG] [app.App]: __init__: Client started.
+[2020-03-16 20:28:54,999] [INFO] [app.client.Client]: connect: Connecting to server...
+[2020-03-16 20:28:54,999] [ERROR] [app.server.Server]: Couldn't open listening socket.
+[2020-03-16 20:28:55,000] [INFO] [app.server.Server]: Closing socket.
+[2020-03-16 20:28:55,000] [INFO] [app.client.Client]: connect: Done.
+[2020-03-16 20:28:55,000] [DEBUG] [app.App]: __init__: Client connected.
+[2020-03-16 20:28:55,000] [DEBUG] [app.App]: addWidgets: Adding widgets to main window.
+[2020-03-16 20:28:55,016] [DEBUG] [app.App]: addWidgets: Finished adding menu.
+[2020-03-16 20:28:55,016] [DEBUG] [app.App]: addWidgets: Done.
+[2020-03-16 20:28:55,016] [DEBUG] [app.App]: openFrame: Opening new frame 'Start'
+[2020-03-16 20:29:04,574] [INFO] [app.App]: Closing the program down.
+[2020-03-16 20:29:04,575] [DEBUG] [app.App]: onExit: Sending kill signal to server...
+[2020-03-16 20:29:04,826] [DEBUG] [app.App]: onExit: Closing client...
+[2020-03-16 20:29:04,826] [DEBUG] [app.client.Client]: close: Closing socket...
+[2020-03-16 20:29:04,826] [DEBUG] [app.client.Client]: close: Done.
+[2020-03-16 20:29:04,826] [DEBUG] [app.App]: onExit: Client closed.
+[2020-03-16 20:29:04,826] [DEBUG] [app.App]: onExit: Closing main window.
+[2020-03-16 20:29:06,900] [DEBUG] [app.App]: __init__: Logging initializd.
+[2020-03-16 20:29:06,901] [INFO] [app.server.Server]: Creating 'Server' instance.
+[2020-03-16 20:29:06,901] [DEBUG] [app.server.Server]: __init__: Loading server configuration...
+[2020-03-16 20:29:06,902] [DEBUG] [app.server.Server]: __init__: Finished loading configuation.
+[2020-03-16 20:29:06,902] [DEBUG] [app.server.Server]: __init__: Loading command codes...
+[2020-03-16 20:29:06,902] [DEBUG] [app.server.Server]: __init__: Finised loading codes.
+[2020-03-16 20:29:06,902] [DEBUG] [app.server.Server]: __init__: Searching for local data...
+[2020-03-16 20:29:06,902] [DEBUG] [app.server.Server]: __init__: No local user data.
+[2020-03-16 20:29:06,902] [DEBUG] [app.makerspace.User]: __init__: Instantiating User object, userid=admin
+[2020-03-16 20:29:06,902] [DEBUG] [app.server.Server]: __init__: No local print data.
+[2020-03-16 20:29:06,903] [DEBUG] [app.server.Server]: __init__: No local print rate data.
+[2020-03-16 20:29:06,903] [DEBUG] [app.server.Server]: __init__: No local printer data found.
+[2020-03-16 20:29:06,903] [DEBUG] [app.server.Server]: __init__: No local invoice data found.
+[2020-03-16 20:29:06,903] [DEBUG] [app.server.Server]: __init__: No local payment data found.
+[2020-03-16 20:29:06,904] [DEBUG] [app.server.Server]: __init__: Starting listener thread...
+[2020-03-16 20:29:06,904] [INFO] [app.server.Server]: Opening socket...
+[2020-03-16 20:29:06,904] [DEBUG] [app.server.Server]: __init__: Finished thread start.
+[2020-03-16 20:29:06,904] [INFO] [app.server.Server]: Finished creating Server instance.
+[2020-03-16 20:29:06,904] [DEBUG] [app.App]: __init__: Server started.
+[2020-03-16 20:29:06,905] [DEBUG] [app.App]: __init__: Client started.
+[2020-03-16 20:29:06,905] [INFO] [app.client.Client]: connect: Connecting to server...
+[2020-03-16 20:29:06,905] [INFO] [app.server.Server]: Socket opened.
+[2020-03-16 20:29:06,906] [INFO] [app.client.Client]: connect: Done.
+[2020-03-16 20:29:06,906] [DEBUG] [app.App]: __init__: Client connected.
+[2020-03-16 20:29:06,906] [INFO] [app.server.Server]: New connection!
+[2020-03-16 20:29:06,906] [DEBUG] [app.server.Server]: onNewClient: Connected with ('127.0.0.1', 58461)
+[2020-03-16 20:29:06,907] [DEBUG] [app.App]: addWidgets: Adding widgets to main window.
+[2020-03-16 20:29:06,922] [DEBUG] [app.App]: addWidgets: Finished adding menu.
+[2020-03-16 20:29:06,922] [DEBUG] [app.App]: addWidgets: Done.
+[2020-03-16 20:29:06,922] [DEBUG] [app.App]: openFrame: Opening new frame 'Start'
+[2020-03-16 20:29:11,251] [DEBUG] [app.App]: openFrame: Opening new frame 'ListUsers'
+[2020-03-16 20:29:11,268] [DEBUG] [app.client.Client]: send: Sending data...
+[2020-03-16 20:29:11,269] [DEBUG] [app.server.Server]: parseCommand: Reading command...
+[2020-03-16 20:29:11,269] [DEBUG] [app.client.Client]: send: Data sent. Waiting for response...
+[2020-03-16 20:29:11,269] [DEBUG] [app.server.Server]: parseCommands: Parsing complete.
+[2020-03-16 20:29:11,269] [DEBUG] [app.server.Server]: parseCommand: Recieved code U4; executing <bound method Server.user_get of <server.Server object at 0x00000215DDD30198>>
+[2020-03-16 20:29:11,270] [DEBUG] [app.server.Server]: parseCommands: Done.
+[2020-03-16 20:29:11,270] [DEBUG] [app.client.Client]: send: Done.
+[2020-03-16 20:29:11,270] [DEBUG] [app.makerspace.User]: __init__: Instantiating User object, userid=admin
+[2020-03-16 20:29:17,646] [INFO] [app.App]: Closing the program down.
+[2020-03-16 20:29:17,646] [DEBUG] [app.App]: onExit: Sending kill signal to server...
+[2020-03-16 20:29:17,734] [INFO] [app.server.Server]: Closing socket.
+[2020-03-16 20:29:17,896] [DEBUG] [app.App]: onExit: Closing client...
+[2020-03-16 20:29:17,896] [DEBUG] [app.client.Client]: close: Closing socket...
+[2020-03-16 20:29:17,896] [DEBUG] [app.client.Client]: close: Done.
+[2020-03-16 20:29:17,896] [DEBUG] [app.App]: onExit: Client closed.
+[2020-03-16 20:29:17,896] [DEBUG] [app.App]: onExit: Closing main window.

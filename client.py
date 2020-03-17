@@ -6,50 +6,30 @@ Free to use and edit.
 """
 
 import configparser
-from enum import Enum
-import json
 import logging
+from random import randint
 import socket
 
-from natsort import natsorted
+#import pycrypto
 
 from commands import commands
-from makerspace import ServerRequest, ServerResponse, PrintRate, User
+from makerspace import ServerRequest, ServerResponse, ServerError
 
-format = logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s]: %(message)s')
-c_logger = logging.getLogger("app.client.Client")
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(format)
-if not len(c_logger.handlers):
-    c_logger.addHandler(ch)
-
-CONFIG_FILE = r"client_config.ini"
+CONFIG_FILE = r"client.ini"
 
 DEFAULT_HOST = "127.0.0.1" # Localhost
 DEFAULT_PORT = 24571
 
 
-class RtnCode(Enum):
-    SUCCESS = 0    # Return when everything goes well
-    SYNTAX_ERR = 1 # Return if there's a problem parsing the command
-    SERVER_ERR = 2 # Return if there was an error on the server trying to execute the command
-
-""" Represent different types of server queries using enums! """
-class CmdCode(Enum):
-    NEW_LOG = 0
-    NEW_LOG_FAILED = 1
-    NEW_USER = 2
-    USER_CHANGE_PASS = 3
-    QUERY_LOG = 4
-
-
-
 class Client:
     def __init__(self):
         # First, load parameters from config file.
-        #self.conf = configparser.ConfigParser()
-        #self.conf.read(CONFIG_FILE)
+        self.conf = configparser.ConfigParser()
+        self.conf.read(CONFIG_FILE)
+        self.host = self.conf.get("CLIENT", "host")
+        self.port = self.conf.getint("CLIENT", "port")
+        
+        self.logger = logging.getLogger("app.client.Client")
         
         # Next, set up some variables we'll be using later
         self.conn = None # This variable will house the connection to the server
@@ -57,49 +37,81 @@ class Client:
         # Load command codes
         self.com = commands()
     
+    
     """ Attempt to connect to the host. """
     def connect(self):
-        c_logger.info("connect: Connecting to server...")
-        host = DEFAULT_HOST#self.conf.get("host", DEFAULT_HOST)
-        port = DEFAULT_PORT#self.conf.get("port", DEFAULT_PORT)
+        self.logger.info("connect: Connecting to server...")
+        host = self.host #DEFAULT_HOST#self.conf.get("host", DEFAULT_HOST)
+        port = self.port #DEFAULT_PORT#self.conf.get("port", DEFAULT_PORT)
         
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((host, port))
         self.conn = s
-        c_logger.info("connect: Done.")
+        self.key = None
+        self.logger.info("connect: Done.")
+    
     
     """ Send something to server and await response. """
     def send(self, data):
-        c_logger.debug("send: Sending data...")
+        self.logger.debug("send: Sending data...")
         self.conn.sendall(data)
-        c_logger.debug("send: Data sent. Waiting for response...")
-        resp = self.conn.recv(1024) # Wait for response
-        c_logger.debug("send: Done.")
+        self.logger.debug("send: Data sent. Waiting for response...")
+        resp = ""
+        
+        while True:
+            resp += self.conn.recv(1024).decode("utf-8")
+            if ServerResponse.END_SIGNAL in resp:
+                resp = resp[:resp.find(ServerResponse.END_SIGNAL)]
+                break
+        self.logger.debug("send: Done.")
         return resp
     
     
     """ Send something to server and await response. """
     def getresp(self, request):
         assert type(request) == ServerRequest
-        resp = ServerResponse.decode(self.send(request.encode()))
+        resp = ServerResponse.decode(self.send(request.encode().encode("utf-8")))
         if not resp.err:
             return resp.val
         else:
-            raise Exception(resp.errmsg)
-        
-
+            raise ServerError(resp.errmsg)
+    
+    
     """ Closes the client socket. """
     def close(self):
-        c_logger.debug("close: Closing socket...")
+        self.logger.debug("close: Closing socket...")
         if self.conn:
             self.conn.close()
-        c_logger.debug("close: Done.")
+        self.logger.debug("close: Done.")
     
     
     """ Sends a request to the server. """
     def sendRequest(self, cmd, *args, **kwargs):
         request = ServerRequest(cmd, *args, **kwargs)
         return self.getresp(request)
+    
+    
+    """ Performs Diffie-Hellman handshake """
+    def handshake(self):
+        # Wait for server to send prime and g
+        m = self.conn.recv(1024)
+        p, g = m.split(",")
+        p = int(p)
+        g = int(g)
+        # Generate a, A
+        a = randint(10000,99999)
+        A = g**a % p
+        # Send to server, await response
+        B = int(self.send(str(A)))
+        # Calculate Key
+        self.conn.key = B**a % p
+    
+    def encrypt(self, data):
+        if not self.conn.key:
+            return data
+        
+        
+        
     
     
     ###############################################################################################
@@ -168,6 +180,19 @@ class Client:
     
     def user_issuper(self, *args, **kwargs):
         return self.sendRequest(self.com.user.issuper, *args, **kwargs)
+    
+    def user_getowing(self, *args, **kwargs):
+        return self.sendRequest(self.com.user.getowing, *args, **kwargs)
+    
+    # ----------------------------------------------------------------------------------- Invoice #
+    def invoice_add(self, *args, **kwargs):
+        return self.sendRequest(self.com.inv.add, *args, **kwargs)
+    
+    def invoice_get(self, *args, **kwargs):
+        return self.sendRequest(self.com.inv.get, *args, **kwargs)
+    
+    def payment_log(self, *args, **kwargs):
+        return self.sendRequest(self.com.inv.pay, *args, **kwargs)
         
 
 if __name__ == "__main__":
